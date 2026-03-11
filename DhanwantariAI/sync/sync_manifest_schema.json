@@ -1,0 +1,136 @@
+{
+  "_comment": "DhanwantariAI Sync Manifest — published to S3 by Bedrock agent daily",
+  "_schema_version": "1.0",
+
+  "manifest_version": "20260306-001",
+  "generated_at": "2026-03-06T06:00:00Z",
+  "min_app_version": "1.0.0",
+
+  "packages": {
+
+    "disease_db": {
+      "version": "20260306",
+      "sha256": "<hash_of_file>",
+      "size_bytes": 1150000,
+      "url": "https://cdn.dhanwantariai.in/updates/disease_db_20260306.json.gz",
+      "delta_from_version": "20260227",
+      "delta_url": "https://cdn.dhanwantariai.in/updates/disease_db_delta_20260227_to_20260306.json.gz",
+      "delta_size_bytes": 12400,
+
+      "sync_policy": {
+        "auto_update": true,
+        "prompt_user": false,
+        "wifi_only": false,
+        "apply_to": "new_sessions_and_existing_data",
+        "conflict_resolution": "server_wins",
+        "stale_after_days": null,
+        "staleness_behavior": "continue_using_local",
+        "_notes": [
+          "Clinical content (symptoms, tests, protocols, medicines) is always safe to replace.",
+          "There is no user-authored data here — server copy is always canonical.",
+          "Delta preferred over full download when available.",
+          "If offline >90 days, force full re-download (delta chain too long)."
+        ]
+      }
+    },
+
+    "price_catalog": {
+      "version": "20260306",
+      "sha256": "<hash_of_file>",
+      "size_bytes": 48000,
+      "url": "https://cdn.dhanwantariai.in/updates/janaushadhi_prices_20260306.json.gz",
+      "delta_url": "https://cdn.dhanwantariai.in/updates/prices_delta_20260227_to_20260306.json.gz",
+      "delta_size_bytes": 3200,
+
+      "sync_policy": {
+        "auto_update": true,
+        "prompt_user": false,
+        "wifi_only": false,
+        "apply_to": "new_sessions_only",
+        "conflict_resolution": "server_wins_for_future",
+        "preserve_historical_sessions": true,
+        "_notes": [
+          "Prices auto-update silently.",
+          "Historical session records (what a health worker showed 3 weeks ago) are NEVER retroactively",
+          "updated — the price shown at session time was correct at that time.",
+          "New sessions after sync always use the latest prices.",
+          "Session records store price_catalog_version alongside the price so audits are always accurate."
+        ]
+      }
+    },
+
+    "model_weights": {
+      "version": "v1.2",
+      "sha256": "<hash_of_file>",
+      "size_bytes": 524288000,
+      "display_size": "500 MB",
+      "url": "https://cdn.dhanwantariai.in/models/dhanwantari_llama3_v1.2_Q4_K_M.gguf",
+      "quantization": "Q4_K_M",
+      "min_ram_gb": 2,
+      "min_free_storage_gb": 1.5,
+      "changelog": "Improved accuracy on V10 sexual health diseases; better Ayurvedic recommendations.",
+
+      "sync_policy": {
+        "auto_update": false,
+        "prompt_user": true,
+        "wifi_only": true,
+        "apply_to": "new_sessions_only",
+        "conflict_resolution": "user_decides",
+        "allow_defer": true,
+        "max_defer_days": 30,
+        "prompt_message_en": "A better version of DhanwantariAI is available. Download on Wi-Fi? (500 MB)",
+        "prompt_message_hi": "DhanwantariAI का बेहतर संस्करण उपलब्ध है। Wi-Fi पर डाउनलोड करें? (500 MB)",
+        "background_download": true,
+        "resume_on_reconnect": true,
+        "_notes": [
+          "User must explicitly confirm — a 500MB download on a rural health worker's data plan is costly.",
+          "Old weights remain active until new download completes and passes checksum verification.",
+          "If user is on low-end device (< 2GB RAM), this prompt is suppressed — rule engine runs instead.",
+          "If user has deferred for > max_defer_days, prompt again on next launch."
+        ]
+      }
+    }
+  },
+
+  "health_worker_offline_rules": {
+    "_description": "Rules applied when device comes online after extended offline period",
+    "0_to_7_days": {
+      "disease_db":     "apply delta silently",
+      "price_catalog":  "apply delta silently",
+      "model_weights":  "notify if update available"
+    },
+    "8_to_30_days": {
+      "disease_db":     "apply delta silently",
+      "price_catalog":  "apply full catalog silently",
+      "model_weights":  "notify if update available — defer allowed"
+    },
+    "31_to_90_days": {
+      "disease_db":     "apply full JSON silently (delta chain too stale)",
+      "price_catalog":  "apply full catalog silently",
+      "model_weights":  "notify — show staleness warning in app until updated"
+    },
+    "over_90_days": {
+      "disease_db":     "force full JSON replace — show toast: 'Clinical database updated'",
+      "price_catalog":  "force full catalog replace",
+      "model_weights":  "show prominent banner: model is significantly outdated",
+      "session_records":"never touch — all historical records preserved as-is"
+    }
+  },
+
+  "session_record_policy": {
+    "_description": "What happens to locally stored diagnostic session records during any sync",
+    "rule": "IMMUTABLE — session records are never modified by any sync operation",
+    "rationale": [
+      "A health worker showed ₹32 for Cefixime on 10-Feb. That was correct on 10-Feb.",
+      "If price changes to ₹38, the Feb session stays at ₹32 — that is the historical truth.",
+      "Each session record stores: price_catalog_version, disease_db_version, model_weights_version.",
+      "This allows full audit trail: 'what data was this recommendation based on?'"
+    ],
+    "session_record_schema_additions": {
+      "disease_db_version": "string — version of disease_db active when session ran",
+      "price_catalog_version": "string — version of price catalog active when session ran",
+      "model_weights_version": "string or null — 'rule_engine' if LLM not available",
+      "synced_at_start_of_session": "ISO8601 timestamp of last successful sync before this session"
+    }
+  }
+}

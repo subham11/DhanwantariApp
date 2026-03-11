@@ -1,0 +1,162 @@
+{
+  "_comment": "Single source of truth for all model variants. To add/change a model: edit this file only. No app rebuild required.",
+  "_schema_version": "1.0",
+
+  "prompt_format": {
+    "template": "sharegpt",
+    "system_role_key": "system",
+    "user_role_key": "human",
+    "assistant_role_key": "gpt",
+    "_note": "All variants share this exact format. Fine-tuning pipeline and inference code must not change per variant."
+  },
+
+  "export_format": {
+    "type": "litert",
+    "quantization": "int4",
+    "file_extension": ".bin",
+    "_alt_cpu_format": "gguf_q4_k_m",
+    "_note": "LiteRT .bin for on-device GPU delegate; GGUF Q4_K_M for llama.cpp CPU fallback. Both exported from same LoRA checkpoint."
+  },
+
+  "selection_policy": {
+    "strategy": "highest_fitting_variant",
+    "_note": "Pick the largest model whose min_ram_mb <= device_available_ram_mb AND whose require_wifi is satisfied.",
+    "fallback_to_rule_engine_below_mb": 1500,
+    "selection_time": "first_launch",
+    "reselect_on": ["ram_change_detected", "manual_user_override"],
+    "allow_manual_downgrade": true
+  },
+
+  "variants": [
+    {
+      "id": "gemma3-4b-dhanwantari-ft",
+      "display_name": "DhanwantariAI Smart (4B)",
+      "base_model": "google/gemma-3-4b-it",
+      "base_model_hf": "google/gemma-3-4b-it",
+      "parameter_count": "4B",
+      "litert_file": "gemma3-4b-dhanwantari-ft.bin",
+      "gguf_file":   "gemma3-4b-dhanwantari-ft.Q4_K_M.gguf",
+      "litert_size_bytes": 2684354560,
+      "gguf_size_bytes":   2684354560,
+      "litert_sha256": "",
+      "gguf_sha256": "",
+      "version": "",
+      "min_ram_mb": 3000,
+      "min_free_storage_mb": 3000,
+      "require_wifi_to_download": true,
+      "context_length": 8192,
+      "avg_tokens_per_second_mid_range": 12,
+      "capabilities": ["diagnosis", "differential", "treatment", "ayurveda", "hereditary_risk", "doctor_qa"],
+      "changelog": ""
+    },
+    {
+      "id": "gemma3-1b-dhanwantari-ft",
+      "display_name": "DhanwantariAI Lite (1B)",
+      "base_model": "google/gemma-3-1b-it",
+      "base_model_hf": "google/gemma-3-1b-it",
+      "parameter_count": "1B",
+      "litert_file": "gemma3-1b-dhanwantari-ft.bin",
+      "gguf_file":   "gemma3-1b-dhanwantari-ft.Q4_K_M.gguf",
+      "litert_size_bytes": 554696704,
+      "gguf_size_bytes":   554696704,
+      "litert_sha256": "",
+      "gguf_sha256": "",
+      "version": "",
+      "min_ram_mb": 1500,
+      "min_free_storage_mb": 700,
+      "require_wifi_to_download": false,
+      "context_length": 8192,
+      "avg_tokens_per_second_mid_range": 25,
+      "capabilities": ["diagnosis", "differential", "treatment", "ayurveda"],
+      "changelog": ""
+    }
+  ],
+
+  "rule_engine_tier": {
+    "id": "rule-engine",
+    "display_name": "DhanwantariAI Basic",
+    "activates_below_ram_mb": 1500,
+    "capabilities": ["diagnosis", "treatment"],
+    "_note": "Pure rule/scoring engine. No model download. Always available offline."
+  },
+
+  "training": {
+    "dataset_file": "training_data/dhanwantari_train.jsonl",
+    "val_file":     "training_data/dhanwantari_val.jsonl",
+    "max_seq_length": 2048,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.1,
+    "lora_target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+    "per_device_train_batch_size": 4,
+    "gradient_accumulation_steps": 4,
+    "num_train_epochs": 5,
+    "learning_rate": 1e-4,
+    "warmup_ratio": 0.1,
+    "weight_decay": 0.05,
+    "lr_scheduler": "cosine",
+    "max_grad_norm": 0.3,
+    "eval_steps": 50,
+    "save_steps": 100,
+    "save_total_limit": 5,
+    "early_stopping_patience": 3,
+    "_note": "All hyperparameters are shared. Only base_model changes per variant. See training/train.py --variant flag."
+  },
+
+  "language_packs": {
+    "_comment": "Language pack = UI translation JSON (~2-5MB) + LoRA adapter (~40MB). Base model downloaded once. Adapter changes per language. System prompts in training/lang/<code>/system_prompt.txt.",
+    "default_language": "en",
+    "adapter_size_mb_approx": 40,
+    "translation_sidecar_mb_approx": 3,
+    "training_data_path_pattern":   "training_data/lang/{lang}/",
+    "adapter_output_path_pattern":  "training/output/{variant_id}/lang-{lang}/adapter/",
+    "translation_sidecar_pattern":  "assets/translations/{lang}/disease_translations.json",
+    "supported": [
+      {
+        "code": "en",
+        "name": "English",
+        "status": "released",
+        "system_prompt_file": "training/lang/en/system_prompt.txt",
+        "note": "Base training language. Adapter bundled with base model release."
+      },
+      {
+        "code": "hi",
+        "name": "Hindi",
+        "status": "planned",
+        "system_prompt_file": "training/lang/hi/system_prompt.txt",
+        "note": "Strong Gemma 3 coverage. 4B quality > 1B on clinical Hindi (मधुमेह, उच्च रक्तचाप). Priority #1 after base release."
+      },
+      {
+        "code": "or",
+        "name": "Odia",
+        "status": "planned",
+        "system_prompt_file": "training/lang/or/system_prompt.txt",
+        "note": "Native speaker dataset curation — expected highest quality of all language packs. IndicCorp v1: 107M tokens. Priority #2."
+      },
+      {
+        "code": "mr",
+        "name": "Marathi",
+        "status": "future",
+        "system_prompt_file": "training/lang/mr/system_prompt.txt"
+      },
+      {
+        "code": "kn",
+        "name": "Kannada",
+        "status": "future",
+        "system_prompt_file": "training/lang/kn/system_prompt.txt"
+      },
+      {
+        "code": "ta",
+        "name": "Tamil",
+        "status": "future",
+        "system_prompt_file": "training/lang/ta/system_prompt.txt"
+      },
+      {
+        "code": "te",
+        "name": "Telugu",
+        "status": "future",
+        "system_prompt_file": "training/lang/te/system_prompt.txt"
+      }
+    ]
+  }
+}

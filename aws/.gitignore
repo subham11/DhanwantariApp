@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+
+# AWS credentials & outputs — never commit secrets
+aws_outputs.json
+.aws/
+*.pem
+
+# Environment variables
+.env
+.env.local
+
+# Lambda packaging
+lambda/**/*.zip
+lambda/**/package/
+
+# Terraform / CDK
+.terraform/
+*.tfstate
+*.tfstate.backup
+cdk.out/
+
+# IDE
+.idea/
+.vscode/

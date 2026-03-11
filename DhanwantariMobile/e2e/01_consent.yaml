@@ -1,0 +1,36 @@
+appId: org.reactjs.native.example.DhanwantariMobile
+---
+# T01 — Consent Screen
+# Section headings (ConsentScreen.tsx lines 41-65):
+#   'Clinical Decision Support Only', 'Data Privacy (DPDP Act 2023)',
+#   'Emergency Protocol', 'CDSCO Classification', 'Ayurvedic & AYUSH References'
+# Title: 'DhanwantariAI — Clinical Advisory Notice' (may wrap, assert partial)
+# CTA button (line 151): "✓  I Understand — Continue"
+# After consent → ProfileList showing "DhanwantariAI" header
+
+- launchApp:
+    clearState: true
+
+- waitForAnimationToEnd
+- takeScreenshot: "T01_consent_screen"
+
+# Advisory title — assert partial text to avoid wrap issues
+- assertVisible: "Clinical Advisory Notice"
+
+# Section headings
+- assertVisible: "Clinical Decision Support Only"
+- assertVisible: "Emergency Protocol"
+- takeScreenshot: "T01_sections_visible"
+
+# Scroll to reveal CTA
+- scroll
+- waitForAnimationToEnd
+
+# Tap the CTA button
+- tapOn: "I Understand"
+- waitForAnimationToEnd
+- takeScreenshot: "T01_after_consent"
+
+# ProfileList header shows DhanwantariAI
+- assertVisible: "DhanwantariAI"
+- takeScreenshot: "T01_profile_list_reached"

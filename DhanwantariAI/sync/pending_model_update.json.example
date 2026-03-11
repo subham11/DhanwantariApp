@@ -1,0 +1,10 @@
+{
+  "_comment": "Drop this file into sync/ after uploading a new GGUF to S3. The Bedrock sync agent reads and clears it on next run.",
+  "version": "20260306",
+  "size_bytes": 4718592000,
+  "gguf_s3_key": "models/dhanwantari_20260306_Q4_K_M.gguf",
+  "base_model": "Llama-3.1-8B-Instruct",
+  "quantization": "Q4_K_M",
+  "training_pairs": 1437,
+  "changelog": "Improved Jan Aushadhi medicine recommendations. Better partial-symptom differential. Added 12 hereditary risk conditions."
+}

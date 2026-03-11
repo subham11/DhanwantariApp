@@ -1,0 +1,64 @@
+appId: org.reactjs.native.example.DhanwantariMobile
+---
+# T05 — Disease Classifications Browse
+# Access: ProfileList header 🗂️ button → Classifications screen
+# DB has 2 category_tags: 'general' (128 diseases) and 'sexual_health' (18)
+# formatCategory() → 'general' = "General", 'sexual_health' = "Sexual Health"
+# Diseases in 'general': Dengue Fever, Tuberculosis, Typhoid Fever, Pneumonia ...
+
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd
+- takeScreenshot: "T05_profile_list"
+
+# Tap the 🗂️ button in ProfileList header → Classifications
+- tapOn: "🗂️"
+- waitForAnimationToEnd
+- takeScreenshot: "T05_classifications_screen"
+
+# DB category cards: "General" and "Sexual Health"
+- assertVisible: "General"
+- takeScreenshot: "T05_general_card_visible"
+
+# Tap "General" category card
+- tapOn: "General"
+- waitForAnimationToEnd
+- takeScreenshot: "T05_general_diseases"
+
+# Diseases in General category should be visible
+- assertTrue:
+    condition: ${maestro.visible("Dengue Fever") || maestro.visible("Tuberculosis") || maestro.visible("Typhoid") || maestro.visible("Pneumonia") || maestro.visible("Malnutrition")}
+    label: "General diseases list visible"
+
+# Scroll disease list
+- scroll
+- takeScreenshot: "T05_diseases_scrolled"
+
+# Tap "Dengue Fever" to open MedicineDetail
+- tapOn: "Dengue Fever"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: "T05_dengue_medicine_detail"
+
+# Medicine detail should show medicine sections
+- assertTrue:
+    condition: ${maestro.visible("Generic") || maestro.visible("JanAushadhi") || maestro.visible("Ayurvedic") || maestro.visible("Medicine") || maestro.visible("Treatment") || maestro.visible("Dengue")}
+    label: "Medicine detail sections visible"
+
+- scroll
+- takeScreenshot: "T05_medicine_scrolled"
+
+# Back to CategoryDiseases, then back to Classifications
+- back
+- waitForAnimationToEnd
+- takeScreenshot: "T05_back_to_diseases"
+
+- back
+- waitForAnimationToEnd
+
+# Back on Classifications — also verify Sexual Health category
+- assertTrue:
+    condition: ${maestro.visible("Sexual Health") || maestro.visible("General")}
+    label: "Back on Classifications screen"
+- takeScreenshot: "T05_classifications_final"

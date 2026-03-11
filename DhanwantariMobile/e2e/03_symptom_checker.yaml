@@ -1,0 +1,87 @@
+appId: org.reactjs.native.example.DhanwantariMobile
+---
+# T03 — Symptom Checker + Analysis
+# Category names (from symptom_disease_mapping.json): General, Head & Neurological, Respiratory, etc.
+# Symptom items: Fever, Headache, Cough (exact strings from JSON)
+# Analyze button text: "Analyze N Symptoms" (SymptomCheckerScreen.tsx line 208)
+# Navigation: 🩺 toolbar button opens SymptomChecker from Chat
+
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd
+
+# Select Satyam Kumar Das profile → navigates to Chat
+- tapOn: "Satyam Kumar Das"
+- waitForAnimationToEnd
+- takeScreenshot: "T03_chat_after_profile"
+
+# Tap the 🩺 symptom checker toolbar button
+- tapOn: "🩺"
+- waitForAnimationToEnd
+- takeScreenshot: "T03_symptom_checker_screen"
+
+# Verify screen title
+- assertVisible: "Symptom Checker"
+
+# Expand General category
+- tapOn: "General"
+- waitForAnimationToEnd
+- takeScreenshot: "T03_general_expanded"
+
+# Select Fever
+- tapOn: "Fever"
+- takeScreenshot: "T03_fever_selected"
+
+# Select Chills
+- tapOn: "Chills"
+
+# Expand Respiratory
+- tapOn: "Respiratory"
+- waitForAnimationToEnd
+
+# Select Cough
+- tapOn: "Cough"
+- takeScreenshot: "T03_3_symptoms_selected"
+
+# Expand Head & Neurological
+- tapOn: "Head & Neurological"
+- waitForAnimationToEnd
+
+# Select Headache
+- tapOn: "Headache"
+- takeScreenshot: "T03_4_symptoms_selected"
+
+# Run analysis (button text: "Analyze 4 Symptoms")
+- tapOn:
+    text: "Analyze"
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: "T03_analysis_result"
+
+# Severity badge should be present
+- assertTrue:
+    condition: ${maestro.visible("IMMEDIATE") || maestro.visible("URGENT") || maestro.visible("ROUTINE")}
+    label: "Severity badge visible"
+
+- takeScreenshot: "T03_severity_and_conditions"
+
+# Scroll to see condition matches
+- scroll
+- takeScreenshot: "T03_conditions_scrolled"
+
+# Navigate to Referral Guidance
+- tapOn: "Referral Guidance"
+- waitForAnimationToEnd
+- takeScreenshot: "T03_referral_guidance"
+
+# Should show referral facility levels
+- assertTrue:
+    condition: ${maestro.visible("PHC") || maestro.visible("CHC") || maestro.visible("ASHA") || maestro.visible("Referral")}
+    label: "Referral facility visible"
+
+# Back
+- back
+- waitForAnimationToEnd
+- back
+- waitForAnimationToEnd

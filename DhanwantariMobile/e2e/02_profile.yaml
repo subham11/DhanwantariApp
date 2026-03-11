@@ -1,0 +1,62 @@
+appId: org.reactjs.native.example.DhanwantariMobile
+---
+# T02 — Profile Management
+# Button text: "+ New Profile" (ProfileListScreen.tsx line 175)
+# Fields: FIRST NAME / LAST NAME / AGE / HEIGHT (CM) / WEIGHT (KG)
+# Save button text: "Save & Start Chat" (NewProfileScreen.tsx line ~276)
+# After save → navigates to Chat, back → ProfileList shows profile name
+
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd
+- takeScreenshot: "T02_profile_list"
+
+# Tap "+ New Profile" button
+- tapOn: "+ New Profile"
+- waitForAnimationToEnd
+- takeScreenshot: "T02_new_profile_form"
+
+# Enter first name (field label: FIRST NAME, placeholder: e.g. Saty)
+- tapOn: "e.g. Saty"
+- inputText: "Ranu"
+
+# Enter last name
+- tapOn: "e.g. Kumar"
+- inputText: "Devi"
+
+# Enter age
+- tapOn: "e.g. 46"
+- inputText: "32"
+
+# Enter height
+- tapOn: "e.g. 170"
+- inputText: "155"
+
+# Enter weight
+- tapOn: "e.g. 72"
+- inputText: "55"
+
+- hideKeyboard
+- waitForAnimationToEnd
+- takeScreenshot: "T02_profile_fields_filled"
+
+# BMI card should auto-compute
+- assertVisible: "BMI"
+
+# Tap Save & Start Chat
+- tapOn: "Save & Start Chat"
+- waitForAnimationToEnd
+- takeScreenshot: "T02_chat_after_save"
+
+# Should land in Chat screen — welcome message or DhanwantariAI header
+- assertVisible: "DhanwantariAI"
+- takeScreenshot: "T02_chat_loaded"
+
+# Go back to ProfileList
+- tapOn: "‹"
+- waitForAnimationToEnd
+- takeScreenshot: "T02_profile_in_list"
+
+# Profile card for Ranu Devi should be in list
+- assertVisible: "Ranu Devi"

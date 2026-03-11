@@ -1,0 +1,45 @@
+appId: org.reactjs.native.example.DhanwantariMobile
+---
+# T04 — Chat Screen
+# Navigates: ProfileList → tap profile → Chat
+# Welcome message contains: "Namaste" (ChatScreen.tsx line ~40)
+# Quick questions: 'Dengue danger signs?', 'Fever in pregnancy — what to do?',
+#                  'TB DOTS medicines & prices', 'Diabetes JanAushadhi meds'
+# Input placeholder: "Ask about symptoms, medicines…"
+# Send button text: "↑"
+
+# Already on Chat screen — no navigation needed
+- takeScreenshot: "T04_chat_screen"
+
+# Welcome message contains Namaste
+- assertVisible: "Namaste"
+- takeScreenshot: "T04_welcome_message"
+
+# Quick question chips should be visible
+- assertVisible: "Dengue danger signs?"
+- takeScreenshot: "T04_quick_chips"
+
+# Tap quick question for Dengue
+- tapOn: "Dengue danger signs?"
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: "T04_dengue_response"
+
+# Response should mention dengue
+- assertVisible: "Dengue"
+
+# Type a manual TB query using the text input
+- tapOn: "Ask about symptoms, medicines…"
+- inputText: "What are TB DOTS side effects I should watch for?"
+- takeScreenshot: "T04_tb_query_typed"
+
+# Send via ↑ button
+- tapOn: "↑"
+- waitForAnimationToEnd:
+    timeout: 20000
+- takeScreenshot: "T04_tb_response"
+
+# Response should appear
+- assertTrue:
+    condition: ${maestro.visible("TB") || maestro.visible("DOTS") || maestro.visible("side") || maestro.visible("treatment")}
+    label: "TB response received"

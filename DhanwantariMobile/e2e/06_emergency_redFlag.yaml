@@ -1,0 +1,70 @@
+appId: org.reactjs.native.example.DhanwantariMobile
+---
+# T06 — Emergency Red Flag Clinical Path
+# Red-flag symptoms (from ClinicalSafetyEngine.ts):
+#   RF001: Loss of Consciousness -> category: Head & Neurological
+#   RF002/RF003: Difficulty Breathing -> category: Respiratory
+#   General: Fever
+# Exact symptom strings from symptom_disease_mapping.json:
+#   "Loss of Consciousness" (Head & Neurological)
+#   "Difficulty Breathing" (Respiratory)
+#   "Fever" (General)
+# Analysis button: "Analyze 3 Symptoms"
+
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd
+
+# Tap Satyam Kumar Das → Chat → 🩺 toolbar → Symptom Checker
+- tapOn: "Satyam Kumar Das"
+- waitForAnimationToEnd
+- tapOn: "🩺"
+- waitForAnimationToEnd
+- takeScreenshot: "T06_symptom_checker"
+
+- assertVisible: "Symptom Checker"
+
+# Expand Head & Neurological and select Loss of Consciousness
+- tapOn: "Head & Neurological"
+- waitForAnimationToEnd
+- tapOn: "Loss of Consciousness"
+- takeScreenshot: "T06_loc_selected"
+
+# Expand Respiratory and select Difficulty Breathing
+- tapOn: "Respiratory"
+- waitForAnimationToEnd
+- tapOn: "Difficulty Breathing"
+- takeScreenshot: "T06_breathing_selected"
+
+# Expand General and select Fever
+- tapOn: "General"
+- waitForAnimationToEnd
+- tapOn: "Fever"
+- takeScreenshot: "T06_all_3_selected"
+
+# Run analysis
+- tapOn:
+    text: "Analyze"
+- waitForAnimationToEnd:
+    timeout: 10000
+- takeScreenshot: "T06_analysis_result"
+
+# ClinicalSafetyEngine should flag IMMEDIATE for Loss of Consciousness
+- assertTrue:
+    condition: ${maestro.visible("IMMEDIATE") || maestro.visible("Emergency") || maestro.visible("emergency") || maestro.visible("108")}
+    label: "IMMEDIATE/Emergency severity for LOC + dyspnea"
+
+# Navigate to Referral Guidance
+- tapOn: "Referral Guidance"
+- waitForAnimationToEnd
+- takeScreenshot: "T06_referral_emergency"
+
+# Emergency referral should show 108 or IMMEDIATE
+- assertTrue:
+    condition: ${maestro.visible("108") || maestro.visible("IMMEDIATE") || maestro.visible("Emergency") || maestro.visible("Immediately")}
+    label: "Emergency call 108 and/or IMMEDIATE referral visible"
+
+- scroll
+- takeScreenshot: "T06_emergency_checklist"
+- takeScreenshot: "T06_final"

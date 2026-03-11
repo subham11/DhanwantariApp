@@ -1,0 +1,3 @@
+# Shared constants for DhanwantariMobile E2E flows
+# appId used by all flows
+appId: org.reactjs.native.example.DhanwantariMobile
