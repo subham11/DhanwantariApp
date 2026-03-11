@@ -40,11 +40,9 @@ AGENTS = {
     "medisync": {
         "agentName": "DhanwantariAI-MediSync-Agent",
         "description": (
-            "Autonomously maintains a live, structured medicine knowledge base "
-            "covering both allopathic (PMBJP/NLEM) and Ayurvedic (AYUSH/brand) "
-            "medicines. Fetches from trusted government sources, normalises to "
-            "a unified schema, detects price changes, and publishes KB patches "
-            "for mobile OTA delivery."
+            "Maintains a live medicine knowledge base covering allopathic and "
+            "Ayurvedic medicines. Fetches, normalises, detects price changes, "
+            "and publishes KB patches for mobile OTA."
         ),
         "foundationModel": "anthropic.claude-3-haiku-20240307-v1:0",
         "instruction": (
@@ -105,11 +103,9 @@ AGENTS = {
     "diseaseintel": {
         "agentName": "DhanwantariAI-DiseaseIntel-Agent",
         "description": (
-            "Researches and maintains a comprehensive disease intelligence "
-            "database. For each disease, extracts symptoms with prevalence, "
-            "BMI-based risk stratification using India-specific ICMR cut-offs, "
-            "red flag criteria, epidemiological context, and ASHA referral "
-            "protocols. All facts are sourced and cited."
+            "Researches and maintains disease intelligence: symptoms, BMI risk "
+            "(ICMR cut-offs), red flags, epidemiology, and ASHA referral "
+            "protocols. All facts sourced and cited."
         ),
         "foundationModel": "anthropic.claude-3-sonnet-20240229-v1:0",
         "instruction": (
@@ -432,12 +428,12 @@ DISEASEINTEL_STATE_MACHINE = {
 EVENTBRIDGE_RULES = {
     "MediSyncWeeklyRule": {
         "ScheduleExpression": "cron(30 20 ? * SUN *)",  # Sunday 02:00 IST
-        "Description": "Weekly medicine list refresh — MediSync Agent",
+        "Description": "Weekly medicine list refresh - MediSync Agent",
         "targetStateMachine": "DhanwantariMediSyncStateMachine",
     },
     "DiseaseIntelMonthlyRule": {
         "ScheduleExpression": "cron(30 21 ? * 1#1 *)",  # 1st Sunday 03:00 IST
-        "Description": "Monthly disease profile refresh — DiseaseIntel Agent",
+        "Description": "Monthly disease profile refresh - DiseaseIntel Agent",
         "targetStateMachine": "DhanwantariDiseaseIntelStateMachine",
     },
 }
@@ -497,18 +493,29 @@ class AgentRegistrar:
         if env_vars:
             environment["Variables"].update(env_vars)
 
-        resp = self.lambda_client.create_function(
-            FunctionName=func_name,
-            Runtime="python3.12",
-            Role=role_arn,
-            Handler="handler.handler",
-            Code={"ZipFile": zip_buffer.read()},
-            MemorySize=memory_mb,
-            Timeout=timeout,
-            Environment=environment,
-            Architectures=["arm64"],
-            Tags={"Project": "DhanwantariAI", "Agent": func_name.split("-")[0]},
-        )
+        zip_bytes = zip_buffer.read()
+        resp = None
+        for _attempt in range(5):
+            try:
+                resp = self.lambda_client.create_function(
+                    FunctionName=func_name,
+                    Runtime="python3.12",
+                    Role=role_arn,
+                    Handler="handler.handler",
+                    Code={"ZipFile": zip_bytes},
+                    MemorySize=memory_mb,
+                    Timeout=timeout,
+                    Environment=environment,
+                    Architectures=["arm64"],
+                    Tags={"Project": "DhanwantariAI", "Agent": func_name.split("-")[0]},
+                )
+                break
+            except self.lambda_client.exceptions.InvalidParameterValueException:
+                import time as _time
+                logger.info("Waiting for IAM role propagation (%s)...", func_name)
+                _time.sleep(10)
+        if resp is None:
+            raise RuntimeError(f"Failed to create Lambda {func_name} after retries")
         logger.info("Created Lambda: %s → %s", func_name, resp["FunctionArn"])
         return resp["FunctionArn"]
 

@@ -20,7 +20,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -63,7 +63,7 @@ def main():
                         help="Which phase to deploy")
     args = parser.parse_args()
 
-    common_args = ["--profile", args.profile, "--region", args.region]
+    common_args = ["--profile", args.profile]
     if args.dry_run:
         common_args.append("--dry-run")
 
@@ -72,7 +72,7 @@ def main():
     print(f"  Region:  {args.region}")
     print(f"  Mode:    {'DRY RUN' if args.dry_run else 'LIVE DEPLOY'}")
     print(f"  Phase:   {args.phase}")
-    print(f"  Time:    {datetime.utcnow().isoformat()}")
+    print(f"  Time:    {datetime.now(timezone.utc).isoformat()}")
 
     results = {}
 

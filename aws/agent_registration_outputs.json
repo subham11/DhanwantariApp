@@ -10,7 +10,7 @@
     },
     "state_machine": "arn:aws:states:ap-south-1:034250960622:stateMachine:DhanwantariMediSyncStateMachine",
     "eventbridge": "MediSyncWeeklyRule",
-    "agent_id": "dry-run-agent-id-medisync"
+    "agent_id": "M1978L9D17"
   },
   "diseaseintel": {
     "agent": "diseaseintel",
@@ -23,6 +23,6 @@
     },
     "state_machine": "arn:aws:states:ap-south-1:034250960622:stateMachine:DhanwantariDiseaseIntelStateMachine",
     "eventbridge": "DiseaseIntelMonthlyRule",
-    "agent_id": "dry-run-agent-id-diseaseintel"
+    "agent_id": "BNMIQKMWDB"
   }
 }

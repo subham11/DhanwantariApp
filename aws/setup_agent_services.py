@@ -274,13 +274,21 @@ def ensure_dynamodb_table(ddb, table_name: str, spec: dict, dry_run: bool) -> st
     waiter = ddb.get_waiter("table_exists")
     waiter.wait(TableName=table_name)
 
-    # Enable PITR if specified
+    # Enable PITR if specified (retry — table may still be initialising)
     if spec.get("pitr"):
-        ddb.update_continuous_backups(
-            TableName=table_name,
-            PointInTimeRecoverySpecification={"PointInTimeRecoveryEnabled": True},
-        )
-        print(f"  [DynamoDB]   PITR enabled: {table_name}")
+        import time as _time
+        for _attempt in range(6):
+            try:
+                ddb.update_continuous_backups(
+                    TableName=table_name,
+                    PointInTimeRecoverySpecification={"PointInTimeRecoveryEnabled": True},
+                )
+                print(f"  [DynamoDB]   PITR enabled: {table_name}")
+                break
+            except ddb.exceptions.ContinuousBackupsUnavailableException:
+                _time.sleep(5)
+        else:
+            print(f"  [DynamoDB]   PITR: failed after retries for {table_name}")
 
     # Enable TTL if specified
     if spec.get("ttl_attr"):
@@ -645,7 +653,7 @@ def main():
         MEDISYNC_ROLE_NAME,
         MEDISYNC_POLICY_NAME,
         _medisync_policy(),
-        "DhanwantariAI MediSync Agent — medicine list intelligence (Haiku)",
+        "DhanwantariAI MediSync Agent - medicine list intelligence (Haiku)",
         dry_run,
     )
     print("  DiseaseIntel Agent Role:")
@@ -654,7 +662,7 @@ def main():
         DISEASEINTEL_ROLE_NAME,
         DISEASEINTEL_POLICY_NAME,
         _diseaseintel_policy(),
-        "DhanwantariAI DiseaseIntel Agent — disease + BMI intelligence (Sonnet)",
+        "DhanwantariAI DiseaseIntel Agent - disease + BMI intelligence (Sonnet)",
         dry_run,
     )
 
