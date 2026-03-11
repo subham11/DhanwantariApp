@@ -20,6 +20,9 @@ import boto3
 from datetime import date, datetime
 from decimal import Decimal
 
+from verification import verify_response
+from auto_judge import judge_response
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -35,6 +38,10 @@ COST_PER_OUTPUT_TOKEN = HAIKU_OUTPUT_CPM / Decimal("1000")
 
 MAX_QUERY_LEN    = 2_000  # characters
 MAX_CONTEXT_LEN  = 4_000  # characters
+
+# Bedrock Guardrails (create via AWS console / IaC — set env vars)
+GUARDRAIL_ID      = os.environ.get("GUARDRAIL_ID", "")
+GUARDRAIL_VERSION = os.environ.get("GUARDRAIL_VERSION", "DRAFT")
 
 # Clients (reused across warm invocations)
 bedrock_runtime = boto3.client("bedrock-runtime", region_name=REGION)
@@ -182,6 +189,8 @@ def handler(event: dict, context) -> dict:
     query       = str(body.get("query",       "")).strip()[:MAX_QUERY_LEN]
     ctx_text    = str(body.get("context",     "")).strip()[:MAX_CONTEXT_LEN]
     patient_tier = str(body.get("patientTier", "3")).strip()
+    is_reanswer = bool(body.get("feedbackRetry", False))
+    original_response = str(body.get("originalResponse", "")).strip()[:MAX_CONTEXT_LEN]
 
     if not query:
         return _response(400, {"error": "query_required"})
@@ -199,25 +208,41 @@ def handler(event: dict, context) -> dict:
 
     # --- Build Bedrock message ---
     user_content = query
-    if ctx_text:
+    if is_reanswer and original_response:
+        user_content = (
+            f"The user was unsatisfied with the following response and asked "
+            f"for a better answer.\n\n"
+            f"Original response:\n{_strip_pii(original_response)}\n\n"
+            f"Original question:\n{query}\n\n"
+            f"Please provide a more thorough, accurate, and helpful response."
+        )
+    elif ctx_text:
         user_content = f"Context:\n{ctx_text}\n\nQuestion:\n{query}"
 
     messages = [{"role": "user", "content": user_content}]
 
-    # --- Invoke model ---
+    risk_level = body.get("riskLevel")  # sent by mobile client after RuleEngine
+
+    # --- Invoke model (with Bedrock Guardrails if configured) ---
     invoke_start = int(time.time() * 1000)
     try:
-        resp = bedrock_runtime.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=json.dumps({
+        invoke_params = {
+            "modelId": MODEL_ID,
+            "contentType": "application/json",
+            "accept": "application/json",
+            "body": json.dumps({
                 "anthropic_version": "bedrock-2023-05-31",
                 "system": SYSTEM_PROMPT,
                 "max_tokens": 1024,
                 "messages": messages,
             }),
-        )
+        }
+        # Attach Bedrock Guardrails if configured
+        if GUARDRAIL_ID:
+            invoke_params["guardrailIdentifier"] = GUARDRAIL_ID
+            invoke_params["guardrailVersion"] = GUARDRAIL_VERSION
+
+        resp = bedrock_runtime.invoke_model(**invoke_params)
     except Exception as e:
         logger.error("Bedrock invoke error: %s", e)
         _emit_metric("BedrockInvokeError", 1)
@@ -234,6 +259,40 @@ def handler(event: dict, context) -> dict:
         + COST_PER_OUTPUT_TOKEN * output_tokens
     )
 
+    # --- Guardrail action (if guardrail intervened) ---
+    guardrail_action = bedrock_body.get("amazon-bedrock-guardrailAction")
+
+    # --- Server-side verification ---
+    verification = verify_response(
+        answer=answer,
+        risk_level=risk_level,
+    )
+    verified_answer = verification["safe_response"]
+
+    # --- Auto-Judge (inline, ~$0.001 cost) ---
+    auto_judge = None
+    if verification["overall"] != "BLOCK":
+        try:
+            auto_judge = judge_response(
+                query=query,
+                response=answer,
+                context=ctx_text,
+                bedrock_client=bedrock_runtime,
+                model_id=MODEL_ID,
+            )
+            # Add judge token cost to total
+            judge_tokens = auto_judge.get("_judge_tokens", {})
+            judge_input = judge_tokens.get("input", 0)
+            judge_output = judge_tokens.get("output", 0)
+            input_tokens += judge_input
+            output_tokens += judge_output
+            query_cost += float(
+                COST_PER_INPUT_TOKEN * judge_input
+                + COST_PER_OUTPUT_TOKEN * judge_output
+            )
+        except Exception as e:
+            logger.warning("Auto-Judge failed (non-blocking): %s", e)
+
     # --- Record usage ---
     _record_usage(table, input_tokens, output_tokens)
 
@@ -246,6 +305,7 @@ def handler(event: dict, context) -> dict:
     # --- Audit log — no PII (§10.3) ---
     logger.info(json.dumps({
         "event":           "escalation",
+        "feedbackRetry":   is_reanswer,
         "queryCost":       round(query_cost, 6),
         "inputTokens":     input_tokens,
         "outputTokens":    output_tokens,
@@ -257,11 +317,22 @@ def handler(event: dict, context) -> dict:
     }))
 
     return _response(200, {
-        "answer":       answer,
+        "answer":       verified_answer,
+        "rawAnswer":    answer if verification["overall"] != "PASS" else None,
         "inputTokens":  input_tokens,
         "outputTokens": output_tokens,
         "model":        MODEL_ID,
         "queryCostUsd": round(query_cost, 6),
+        "verification": {
+            "overall":  verification["overall"],
+            "stages":   verification["stages"],
+        },
+        "autoJudge": {
+            "overall":        auto_judge.get("overall") if auto_judge else None,
+            "recommendation": auto_judge.get("recommendation") if auto_judge else None,
+            "flags":          auto_judge.get("flags", []) if auto_judge else [],
+        } if auto_judge else None,
+        "guardrailAction": guardrail_action,
     })
 
 

@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import {NativeStackScreenProps} from '@react-navigation/native-stack';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {nanoid} from '@reduxjs/toolkit';
 import {useAppDispatch, useAppSelector} from '@hooks/useAppDispatch';
 import {useChatCompletionMutation} from '@services/llmApi';
 import {buildSystemPrompt, generateOfflineResponse} from '@services/offlineFallback';
 import {clearSelectedSymptoms} from '@store/symptomSlice';
-import {AnalysisResult, RootStackParamList} from '@store/types';
+import {AnalysisResult, RootStackParamList, FeedbackValue} from '@store/types';
 import {assessRisk, riskLevelLabel, referralLevelLabel} from '@ai/RuleEngine';
+import {enqueueFeedback} from '@services/FeedbackQueueService';
 import {SeverityBadge, MatchBadge} from '@components/common/Badges';
 import ConditionCard from '@components/common/ConditionCard';
 import GlassCard from '@components/glass/GlassCard';
@@ -51,6 +53,8 @@ const SymptomAnalysisScreen: React.FC<Props> = ({navigation, route}) => {
   const llmFetchedRef = useRef(false);
   const [showAllConditions, setShowAllConditions] = useState(false);
   const [chatCompletion] = useChatCompletionMutation();
+  const [analysisFeedback, setAnalysisFeedback] = useState<FeedbackValue>(null);
+  const analysisFeedbackIdRef = useRef(nanoid());
 
   const ruleResult = React.useMemo(
     () => assessRisk(result.symptoms, result.matchedDiseases),
@@ -111,6 +115,25 @@ const SymptomAnalysisScreen: React.FC<Props> = ({navigation, route}) => {
       })
       .finally(() => setIsLlmLoading(false));
   }, [result, profile, chatCompletion]);
+
+  const handleAnalysisFeedback = useCallback(
+    async (value: 'up' | 'down') => {
+      const newValue: FeedbackValue = analysisFeedback === value ? null : value;
+      setAnalysisFeedback(newValue);
+
+      if (newValue === 'down') {
+        const queryText = `Symptoms: ${result.symptoms.join(', ')} | Severity: ${result.severity}`;
+        const responseText = llmAnalysis ?? result.personalizedAnalysis ?? '';
+        await enqueueFeedback(
+          analysisFeedbackIdRef.current,
+          profileId,
+          queryText,
+          responseText,
+        );
+      }
+    },
+    [analysisFeedback, result, llmAnalysis, profileId],
+  );
 
   const handleDone = useCallback(() => {
     dispatch(clearSelectedSymptoms());
@@ -202,7 +225,27 @@ const SymptomAnalysisScreen: React.FC<Props> = ({navigation, route}) => {
                   </Text>
                 </>
               ) : llmAnalysis ? (
-                <MarkdownText style={styles.analysisText}>{llmAnalysis}</MarkdownText>
+                <>
+                  <MarkdownText style={styles.analysisText}>{llmAnalysis}</MarkdownText>
+                  <View style={styles.feedbackRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.feedbackBtn,
+                        analysisFeedback === 'up' && styles.feedbackBtnActiveUp,
+                      ]}
+                      onPress={() => handleAnalysisFeedback('up')}>
+                      <Text style={styles.feedbackIcon}>👍</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.feedbackBtn,
+                        analysisFeedback === 'down' && styles.feedbackBtnActiveDown,
+                      ]}
+                      onPress={() => handleAnalysisFeedback('down')}>
+                      <Text style={styles.feedbackIcon}>👎</Text>
+                    </TouchableOpacity>
+                  </View>
+                </>
               ) : (
                 <Text style={styles.noMatchText}>
                   No strong matches found. Please consult a healthcare
@@ -547,6 +590,29 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     fontWeight: Typography.semibold,
     color: Colors.textPrimary,
+  },
+  // Feedback buttons
+  feedbackRow: {
+    flexDirection: 'row',
+    gap: Spacing['1'],
+    marginTop: Spacing['2'],
+    justifyContent: 'flex-end',
+  },
+  feedbackBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: Radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedbackBtnActiveUp: {
+    backgroundColor: 'rgba(46,125,50,0.12)',
+  },
+  feedbackBtnActiveDown: {
+    backgroundColor: 'rgba(211,47,47,0.12)',
+  },
+  feedbackIcon: {
+    fontSize: 16,
   },
 });
 

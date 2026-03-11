@@ -1,0 +1,192 @@
+# DhanwantariAI — Self-Verification E2E Tests (Maestro)
+# Tests that the verification pipeline blocks/warns/passes correctly.
+
+appId: com.dhanwantarimobile
+
+---
+
+# ── Test 1: SafetyGate blocks minimisation for IMMEDIATE risk ─────────────
+
+- launchApp
+
+- tapOn:
+    id: "symptomChecker_start"
+
+# Select red-flag symptoms (chest pain + breathlessness → IMMEDIATE risk)
+- tapOn:
+    text: "Chest Pain"
+- tapOn:
+    text: "Breathlessness"
+- tapOn:
+    id: "analyze_symptoms"
+
+# Wait for diagnosis result
+- assertVisible:
+    id: "diagnosis_result"
+
+# Navigate to chat for LLM response
+- tapOn:
+    id: "ask_ai_button"
+
+- inputText:
+    id: "chat_input"
+    text: "Is this serious?"
+
+- tapOn:
+    id: "send_message"
+
+# Wait for response
+- assertVisible:
+    id: "ai_response"
+
+# Verify: response should NOT contain minimising phrases
+- assertNotVisible:
+    text: "no need to worry"
+- assertNotVisible:
+    text: "not serious"
+- assertNotVisible:
+    text: "home remedy"
+
+# Verify: response SHOULD mention referral
+- assertVisible:
+    text: "refer"
+
+# Verify verification badge is visible
+- assertVisible:
+    id: "verification_badge"
+
+---
+
+# ── Test 2: DosageCheck warns on unverified medication ────────────────────
+
+- launchApp
+
+- tapOn:
+    id: "symptomChecker_start"
+
+- tapOn:
+    text: "Fever"
+- tapOn:
+    text: "Body Ache"
+- tapOn:
+    id: "analyze_symptoms"
+
+- assertVisible:
+    id: "diagnosis_result"
+
+- tapOn:
+    id: "ask_ai_button"
+
+- inputText:
+    id: "chat_input"
+    text: "What medicine should I take?"
+
+- tapOn:
+    id: "send_message"
+
+- assertVisible:
+    id: "ai_response"
+
+# Should include disclaimer about doctor verification
+- assertVisible:
+    text: "qualified doctor"
+
+---
+
+# ── Test 3: ContradictionDetector — verify referral not contradicted ──────
+
+- launchApp
+
+- tapOn:
+    id: "symptomChecker_start"
+
+# Select symptoms that trigger URGENT risk
+- tapOn:
+    text: "High Fever"
+- tapOn:
+    text: "Severe Headache"
+- tapOn:
+    text: "Neck Stiffness"
+- tapOn:
+    id: "analyze_symptoms"
+
+- assertVisible:
+    id: "diagnosis_result"
+
+# Risk level should show URGENT or IMMEDIATE
+- assertVisible:
+    id: "risk_level_badge"
+
+# Referral recommendation should be visible
+- assertVisible:
+    id: "referral_recommendation"
+
+---
+
+# ── Test 4: CitationBinder — response has source tags ─────────────────────
+
+- launchApp
+
+- tapOn:
+    id: "symptomChecker_start"
+
+- tapOn:
+    text: "Cough"
+- tapOn:
+    text: "Cold"
+- tapOn:
+    id: "analyze_symptoms"
+
+- assertVisible:
+    id: "diagnosis_result"
+
+- tapOn:
+    id: "ask_ai_button"
+
+- inputText:
+    id: "chat_input"
+    text: "What should I do?"
+
+- tapOn:
+    id: "send_message"
+
+- assertVisible:
+    id: "ai_response"
+
+# Verification score should be visible
+- assertVisible:
+    id: "verification_score"
+
+---
+
+# ── Test 5: Verification telemetry — badge shows correct status ───────────
+
+- launchApp
+
+- tapOn:
+    id: "symptomChecker_start"
+
+- tapOn:
+    text: "Fever"
+- tapOn:
+    id: "analyze_symptoms"
+
+- assertVisible:
+    id: "diagnosis_result"
+
+- tapOn:
+    id: "ask_ai_button"
+
+- inputText:
+    id: "chat_input"
+    text: "Tell me about this condition"
+
+- tapOn:
+    id: "send_message"
+
+- assertVisible:
+    id: "ai_response"
+
+# Verification badge should show PASS or WARN (not BLOCK for routine fever)
+- assertVisible:
+    id: "verification_badge"

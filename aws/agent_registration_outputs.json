@@ -1,0 +1,28 @@
+{
+  "medisync": {
+    "agent": "medisync",
+    "lambdas": {
+      "WebFetcher": "arn:aws:lambda:ap-south-1:034250960622:function:medisync-web-fetcher",
+      "PDFParser": "arn:aws:lambda:ap-south-1:034250960622:function:medisync-pdf-parser",
+      "DataNormaliser": "arn:aws:lambda:ap-south-1:034250960622:function:medisync-normaliser",
+      "DiffEngine": "arn:aws:lambda:ap-south-1:034250960622:function:medisync-diff-engine",
+      "StorageWriter": "arn:aws:lambda:ap-south-1:034250960622:function:medisync-storage-writer"
+    },
+    "state_machine": "arn:aws:states:ap-south-1:034250960622:stateMachine:DhanwantariMediSyncStateMachine",
+    "eventbridge": "MediSyncWeeklyRule",
+    "agent_id": "dry-run-agent-id-medisync"
+  },
+  "diseaseintel": {
+    "agent": "diseaseintel",
+    "lambdas": {
+      "SourceResearcher": "arn:aws:lambda:ap-south-1:034250960622:function:diseaseintel-source-researcher",
+      "BMIRiskExtractor": "arn:aws:lambda:ap-south-1:034250960622:function:diseaseintel-bmi-extractor",
+      "SymptomExtractor": "arn:aws:lambda:ap-south-1:034250960622:function:diseaseintel-symptom-extractor",
+      "ProfileBuilder": "arn:aws:lambda:ap-south-1:034250960622:function:diseaseintel-profile-builder",
+      "StorageWriter": "arn:aws:lambda:ap-south-1:034250960622:function:diseaseintel-storage-writer"
+    },
+    "state_machine": "arn:aws:states:ap-south-1:034250960622:stateMachine:DhanwantariDiseaseIntelStateMachine",
+    "eventbridge": "DiseaseIntelMonthlyRule",
+    "agent_id": "dry-run-agent-id-diseaseintel"
+  }
+}

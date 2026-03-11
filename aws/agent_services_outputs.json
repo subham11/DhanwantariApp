@@ -1,0 +1,17 @@
+{
+  "kb_bucket": "dhanwantari-kb-ap-south-1",
+  "dynamodb_tables": {
+    "dhanwantari-medicines": "arn:aws:dynamodb:ap-south-1:034250960622:table/dhanwantari-medicines",
+    "dhanwantari-diseases": "arn:aws:dynamodb:ap-south-1:034250960622:table/dhanwantari-diseases",
+    "dhanwantari-symptom-mappings": "arn:aws:dynamodb:ap-south-1:034250960622:table/dhanwantari-symptom-mappings",
+    "dhanwantari-bmi-matrix": "arn:aws:dynamodb:ap-south-1:034250960622:table/dhanwantari-bmi-matrix",
+    "dhanwantari-agent-runs": "arn:aws:dynamodb:ap-south-1:034250960622:table/dhanwantari-agent-runs"
+  },
+  "medisync_role_arn": "arn:aws:iam::034250960622:role/DhanwantariMediSyncAgentRole",
+  "diseaseintel_role_arn": "arn:aws:iam::034250960622:role/DhanwantariDiseaseIntelAgentRole",
+  "qdrant_secret_arn": "arn:aws:secretsmanager:ap-south-1:034250960622:secret:DhanwantariAI/QdrantApiKey-zHAgmc",
+  "bedrock_access": {
+    "anthropic.claude-3-haiku-20240307-v1:0": true,
+    "anthropic.claude-3-sonnet-20240229-v1:0": true
+  }
+}

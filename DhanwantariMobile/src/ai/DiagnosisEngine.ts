@@ -17,11 +17,13 @@ import {analyzeSymptoms} from '@utils/symptomMatcher';
 import {assessRisk} from './RuleEngine';
 import {evaluateSafety} from './ClinicalSafetyEngine';
 import {retrieveHybrid} from '@retrieval/HybridRetrieval';
+import {verifyResponse} from './verification/VerdictEngine';
 import {Config} from '@config';
 import type {
   DiagnosisResult,
   SeverityLevel,
   UserProfile,
+  VerificationOutput,
 } from '@store/types';
 
 // ─── Severity → numeric score ────────────────────────────────────────────────
@@ -126,7 +128,35 @@ export async function diagnose(
     shouldEscalateToBedrock,
     escalationReason,
     personalizedAnalysis,
+    safetyEval,
   };
+}
+
+// ─── Post-LLM Verification ──────────────────────────────────────────────────
+
+/**
+ * Run self-verification on an LLM response (on-device or Bedrock).
+ * Call this after receiving the LLM output, before showing to the user.
+ */
+export function verifyLLMResponse(
+  llmResponse: string,
+  diagnosisResult: DiagnosisResult,
+  source: 'on_device' | 'bedrock' = 'on_device',
+): VerificationOutput {
+  return verifyResponse({
+    llmResponse,
+    safetyEval: diagnosisResult.safetyEval ?? {
+      hasCriticalRedFlags: false,
+      suppressLLM: false,
+      displayMessage: '',
+      firedRules: [],
+    },
+    ruleResult: diagnosisResult.ruleEngineResult,
+    matchedDiseases: diagnosisResult.matchedDiseases,
+    retrievalBundle: diagnosisResult.retrievalBundle,
+    topDiseaseRecord: diagnosisResult.matchedDiseases[0]?.disease ?? null,
+    source,
+  });
 }
 
 // ─── Personalised summary builder ────────────────────────────────────────────

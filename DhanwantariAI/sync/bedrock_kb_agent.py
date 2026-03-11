@@ -30,7 +30,7 @@ Architecture
     │     ├── icmr_guidelines/              (PDF guidelines)
     │     ├── janaushadhi_catalogue.json    (full price + location data)
     │     └── drug_interactions.json        (future: curated interactions)
-    └── Vector store: Amazon OpenSearch Serverless (or Aurora pg-vector)
+    └── Vector store: Qdrant Cloud (eu-west-2, shared with mobile retrieval)
 
 QueryFlow
 ---------
@@ -307,7 +307,7 @@ def run_mock() -> None:
     print('  2. Source: S3 bucket "dhanwantariai-kb-source"')
     print('  3. Upload: disease_db_full.json, icmr_guidelines/, janaushadhi_catalogue.json')
     print('  4. Embeddings: Amazon Titan Embed Text v2 (ap-south-1)')
-    print('  5. Vector store: Amazon OpenSearch Serverless (auto-created)')
+    print('  5. Vector store: Qdrant Cloud (eu-west-2, shared with mobile retrieval)')
     print('  6. Set env var: BEDROCK_KB_ID=<kb-id-from-console>')
     print('\n── Mock Response ───────────────────────────────────────')
     mock_response = {

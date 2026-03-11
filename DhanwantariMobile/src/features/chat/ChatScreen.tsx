@@ -24,6 +24,7 @@ import {indexMarkdownReport, searchReport, SAMPLE_BLOOD_REPORT} from '@services/
 import GlassHeader from '@components/glass/GlassHeader';
 import GlassCard from '@components/glass/GlassCard';
 import AnimatedPressable from '@components/common/AnimatedPressable';
+import FeedbackButtons from '@components/common/FeedbackButtons';
 import {Colors, Typography, Spacing, Radii, Shadows} from '@theme/tokens';
 import {getInitials} from '@utils/analysisEngine';
 import {tierLabel} from '@ai/DeviceCapabilityDetector';
@@ -218,6 +219,18 @@ const ChatScreen: React.FC<Props> = ({navigation, route}) => {
   const renderMessage = useCallback(
     ({item, index}: {item: ChatMessage; index: number}) => {
       const isUser = item.role === 'user';
+
+      // Find the preceding user message as context for feedback re-answer
+      let precedingQuery = '';
+      if (!isUser) {
+        for (let i = index - 1; i >= 0; i--) {
+          if (messages[i]?.role === 'user') {
+            precedingQuery = messages[i].content;
+            break;
+          }
+        }
+      }
+
       return (
         <View
           style={[
@@ -248,6 +261,15 @@ const ChatScreen: React.FC<Props> = ({navigation, route}) => {
                 minute: '2-digit',
               })}
             </Text>
+            {!isUser && !item.isStreaming && (
+              <FeedbackButtons
+                messageId={item.id}
+                profileId={profileId}
+                currentFeedback={item.feedback}
+                originalQuery={precedingQuery}
+                originalResponse={item.content}
+              />
+            )}
           </View>
           {isUser && profile && (
             <View style={[styles.avatarSmall, styles.avatarSmallUser]}>
@@ -259,7 +281,7 @@ const ChatScreen: React.FC<Props> = ({navigation, route}) => {
         </View>
       );
     },
-    [profile],
+    [profile, profileId, messages],
   );
 
   if (!profile) {

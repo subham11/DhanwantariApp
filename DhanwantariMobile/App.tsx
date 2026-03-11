@@ -10,6 +10,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import {initDB, seedDiseases} from './src/services/db';
 import {getDiseases} from './src/utils/dataLoader';
 import {runSync} from './src/services/syncEngine';
+import {startFeedbackSync} from './src/services/FeedbackSyncWorker';
 import {detectDeviceCapability} from './src/ai/DeviceCapabilityDetector';
 import {setDeviceProfile, setConsentGranted} from './src/store/deviceSlice';
 import {hasConsent} from './src/privacy/ConsentManager';
@@ -45,6 +46,9 @@ function App(): React.JSX.Element {
 
       // Non-blocking: fire and forget — errors handled inside runSync
       runSync();
+
+      // Start background feedback queue sync (drains on connectivity)
+      startFeedbackSync();
     })();
 
     // ── Foreground detection: re-sync when app comes back from background ───

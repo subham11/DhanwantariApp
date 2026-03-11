@@ -483,7 +483,7 @@ Runs daily on EventBridge schedule:
 - **Purpose:** Deep clinical questions via RAG (drug interactions, guidelines, etc.)
 - **Model:** `amazon.nova-lite-v1:0` (fast + cheap for RAG)
 - **API:** `POST /knowledge`
-- **Source:** Bedrock Knowledge Base (S3 + OpenSearch Serverless vector store)
+- **Source:** Qdrant Cloud (eu-west-2, shared with mobile retrieval) + S3 source docs
 - **KB Sources:** disease_db_full.json, ICMR guidelines PDFs, JanAushadhi catalogue, drug_interactions.json
 - **Input:** question + optional context (disease_ids, medicine_names)
 - **Output:** Answer + source citations + disclaimer

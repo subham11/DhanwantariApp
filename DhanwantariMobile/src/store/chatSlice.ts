@@ -1,5 +1,5 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
-import {ChatMessage} from './types';
+import {ChatMessage, FeedbackValue} from './types';
 
 interface ChatState {
   // keyed by profileId
@@ -58,6 +58,38 @@ const chatSlice = createSlice({
     setLLMConnected(state, action: PayloadAction<boolean>) {
       state.isLLMConnected = action.payload;
     },
+    setMessageFeedback(
+      state,
+      action: PayloadAction<{
+        profileId: string;
+        messageId: string;
+        feedback: FeedbackValue;
+      }>,
+    ) {
+      const {profileId, messageId, feedback} = action.payload;
+      const session = state.sessions[profileId];
+      if (!session) return;
+      const msg = session.find(m => m.id === messageId);
+      if (msg) {
+        msg.feedback = feedback;
+      }
+    },
+    updateMessageContent(
+      state,
+      action: PayloadAction<{
+        profileId: string;
+        messageId: string;
+        content: string;
+      }>,
+    ) {
+      const {profileId, messageId, content} = action.payload;
+      const session = state.sessions[profileId];
+      if (!session) return;
+      const msg = session.find(m => m.id === messageId);
+      if (msg) {
+        msg.content = content;
+      }
+    },
   },
 });
 
@@ -67,6 +99,8 @@ export const {
   setStreamingMessageId,
   clearSession,
   setLLMConnected,
+  setMessageFeedback,
+  updateMessageContent,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

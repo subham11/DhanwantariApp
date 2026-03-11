@@ -139,6 +139,28 @@ async function createSchema(db: DB): Promise<void> {
         embedding  FLOAT[384]
       );
   `);
+
+  // Feedback queue — persistent queue for thumbs-down items to re-answer via Bedrock
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS feedback_queue (
+      id                TEXT PRIMARY KEY,
+      message_id        TEXT NOT NULL,
+      profile_id        TEXT NOT NULL,
+      original_query    TEXT NOT NULL,
+      original_response TEXT NOT NULL,
+      context           TEXT NOT NULL DEFAULT '',
+      status            TEXT NOT NULL DEFAULT 'pending',
+      retry_count       INTEGER NOT NULL DEFAULT 0,
+      bedrock_response  TEXT,
+      created_at        TEXT NOT NULL,
+      updated_at        TEXT NOT NULL
+    );
+  `);
+
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_feedback_queue_status
+      ON feedback_queue(status);
+  `);
 }
 
 // ─── Profile CRUD ─────────────────────────────────────────────────────────────

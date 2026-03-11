@@ -29,6 +29,8 @@ export interface UserProfile {
 
 export type MessageRole = 'user' | 'assistant' | 'system';
 
+export type FeedbackValue = 'up' | 'down' | null;
+
 export interface ChatMessage {
   id: string;
   role: MessageRole;
@@ -36,6 +38,29 @@ export interface ChatMessage {
   timestamp: string;
   isStreaming?: boolean;
   isOffline?: boolean;
+  feedback?: FeedbackValue;
+}
+
+// ─── Feedback Queue ───────────────────────────────────────────────────────────
+
+export type FeedbackQueueStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed';
+
+export interface FeedbackQueueItem {
+  id: string;
+  messageId: string;
+  profileId: string;
+  originalQuery: string;
+  originalResponse: string;
+  context: string;
+  status: FeedbackQueueStatus;
+  retryCount: number;
+  bedrockResponse: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // ─── Symptoms ─────────────────────────────────────────────────────────────────
@@ -187,6 +212,10 @@ export interface DiagnosisResult {
   shouldEscalateToBedrock: boolean;
   escalationReason: string | null;
   personalizedAnalysis: string;
+  /** Self-verification output — populated after LLM response is verified */
+  verification?: VerificationOutput;
+  /** Safety evaluation from ClinicalSafetyEngine (needed by verification) */
+  safetyEval?: SafetyEvaluation;
 }
 
 // ─── Consent ──────────────────────────────────────────────────────────────────
@@ -248,6 +277,63 @@ export interface LLMResponse {
     finish_reason: string;
   }>;
   usage?: {prompt_tokens: number; completion_tokens: number; total_tokens: number};
+}
+
+// ─── Self-Verification Pipeline ───────────────────────────────────────────────
+
+export type VerificationStage =
+  | 'V1_FACT'
+  | 'V2_SAFETY'
+  | 'V3_DOSAGE'
+  | 'V4_CONTRADICTION'
+  | 'V5_CITATION';
+
+export type VerificationVerdict = 'PASS' | 'WARN' | 'BLOCK';
+
+export interface Citation {
+  claim: string;
+  source: string;
+  section?: string;
+}
+
+export interface StageResult {
+  stage: VerificationStage;
+  verdict: VerificationVerdict;
+  reason: string;
+  replacement?: string;
+  citations?: Citation[];
+}
+
+export interface VerificationOutput {
+  overall: VerificationVerdict;
+  stages: StageResult[];
+  displayResponse: string;
+  verificationScore: number;
+  auditLog: VerificationAuditEntry;
+}
+
+export interface VerificationAuditEntry {
+  ts: string;
+  overall: VerificationVerdict;
+  stages: Array<{stage: VerificationStage; verdict: VerificationVerdict; reason: string}>;
+  groundingRatio?: number;
+  source: 'on_device' | 'bedrock';
+}
+
+/** Extracted factual assertion from LLM output */
+export interface FactualAssertion {
+  type: 'disease' | 'symptom_link' | 'medication' | 'dosage' | 'referral';
+  value: string;
+  grounded: boolean;
+  source?: string;
+}
+
+/** Dosage extraction result */
+export interface ExtractedDosage {
+  medication: string;
+  amount: number;
+  unit: string;
+  rawText: string;
 }
 
 // ─── Data JSON root ───────────────────────────────────────────────────────────
